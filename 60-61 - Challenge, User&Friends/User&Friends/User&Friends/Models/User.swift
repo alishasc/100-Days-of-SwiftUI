@@ -1,0 +1,69 @@
+//
+//  User.swift
+//  User&Friends
+//
+//  Created by Alisha Carrington on 09/08/2025.
+//
+
+import Foundation
+import SwiftData
+
+@Model
+class User: Codable, Identifiable {
+    enum CodingKeys: String, CodingKey {
+        case id, name, company, email, address, about
+        case isActive
+        case age
+        case registered
+        case friends
+    }
+    
+    var id: String
+    var isActive: Bool
+    var name: String
+    var age: Int
+    var company: String
+    var email: String
+    var address: String
+    var about: String
+    var registered: Date
+    var friends: [Friend]
+    
+    struct Friend: Codable, Identifiable {
+        var id: String
+        var name: String
+    }
+    
+    // format the registered date
+    var formattedRegisteredDate: String {
+        registered.formatted(date: .abbreviated, time: .omitted)
+    }
+    
+    required init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(String.self, forKey: .id)
+        self.name = try container.decode(String.self, forKey: .name)
+        self.company = try container.decode(String.self, forKey: .company)
+        self.email = try container.decode(String.self, forKey: .email)
+        self.address = try container.decode(String.self, forKey: .address)
+        self.about = try container.decode(String.self, forKey: .about)
+        self.isActive = try container.decode(Bool.self, forKey: .isActive)
+        self.age = try container.decode(Int.self, forKey: .age)
+        self.registered = try container.decode(Date.self, forKey: .registered)
+        self.friends = try container.decode([User.Friend].self, forKey: .friends)
+    }
+    
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(self.id, forKey: .id)
+        try container.encode(self.name, forKey: .name)
+        try container.encode(self.company, forKey: .company)
+        try container.encode(self.email, forKey: .email)
+        try container.encode(self.address, forKey: .address)
+        try container.encode(self.about, forKey: .about)
+        try container.encode(self.isActive, forKey: .isActive)
+        try container.encode(self.age, forKey: .age)
+        try container.encode(self.registered, forKey: .registered)
+        try container.encode(self.friends, forKey: .friends)
+    }
+}
