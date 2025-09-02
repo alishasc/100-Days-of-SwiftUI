@@ -12,9 +12,21 @@ import UserNotifications
 
 struct ProspectsView: View {
     @Environment(\.modelContext) var modelContext
-    @Query(sort: \Prospect.name) var prospects: [Prospect]
+    @Query var prospects: [Prospect]
     @State private var isShowingScanner = false  // qr code scanner
     @State private var selectedProspects = Set<Prospect>()
+    
+    // sort prospects order based on Menu selection
+    @State private var sortByName = true
+    var sortedProspects: [Prospect] {
+        switch(sortByName) {
+        case true:
+            prospects.sorted { $0.name < $1.name }
+        case false:
+            // show newest first
+            prospects.sorted { $0.dateAdded > $1.dateAdded }
+        }
+    }
     
     enum FilterType {
         case none, contacted, uncontacted
@@ -44,15 +56,13 @@ struct ProspectsView: View {
             _prospects = Query(filter: #Predicate {
                 // for each prospect, check if isContacted matches showContactedOnly - will filter between contacted/uncontacted people
                 $0.isContacted == showContactedOnly
-            }, sort: [SortDescriptor(\Prospect.name),
-                      SortDescriptor(\Prospect.dateAdded)]
-            )
+            })
         }
     }
     
     var body: some View {
         NavigationStack {
-            List(prospects, selection: $selectedProspects) { prospect in
+            List(sortedProspects, selection: $selectedProspects) { prospect in
                 NavigationLink {
                     EditContactView(prospect: prospect)
                 } label: {
@@ -107,11 +117,30 @@ struct ProspectsView: View {
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu("Sort by") {
-                        Text("Name")
-                            .tag(SortDescriptor(\Prospect.name))
-                        Text("Recent")
-                            .tag(SortDescriptor(\Prospect.dateAdded))
+                    Menu("Sort") {
+                        Button {
+                            sortByName = true
+                        } label: {
+                            HStack {
+                                Text("Name")
+                                Spacer()
+                                if sortByName {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                        
+                        Button {
+                            sortByName = false
+                        } label: {
+                            HStack {
+                                Text("Recently Added")
+                                Spacer()
+                                if !sortByName {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
                     }
                 }
                 

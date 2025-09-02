@@ -31,15 +31,24 @@ struct MeView: View {
                     .textContentType(.emailAddress)
                     .font(.title)
                 
-                // will regenerate image everytime the name/email change
-                Image(uiImage: generateQRCode(from: "\(name)\n\(emailAddress)"))
-                    .interpolation(.none)  // remove pixel smoothing effect
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .contextMenu {
-                        ShareLink(item: Image(uiImage: qrCode), preview: SharePreview("My QR Code", image: Image(uiImage: qrCode)))
+                VStack {
+                    HStack {
+                        Spacer()
+                        // will regenerate image everytime the name/email changes
+                        Image(uiImage: generateQRCode(from: "\(name)\n\(emailAddress)"))
+                            .interpolation(.none)  // remove pixel smoothing effect
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 250, height: 250)
+                            .contextMenu {
+                                ShareLink(item: Image(uiImage: qrCode), preview: SharePreview("My QR Code", image: Image(uiImage: qrCode)))
+                            }
+                        Spacer()
                     }
+                    
+                    Text("Hold to share!")
+                        .foregroundStyle(.secondary)
+                }
             }
             .navigationTitle("Your code")
             .onAppear(perform: updateCode)
@@ -60,7 +69,7 @@ struct MeView: View {
             }
         }
         
-        // if fails...
+        // if fails
         return UIImage(systemName: "xmark.circle") ?? UIImage()
     }
     
