@@ -150,6 +150,7 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(DataManager())
 }
 
 extension View {

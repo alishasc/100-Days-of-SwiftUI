@@ -27,8 +27,8 @@ struct CardView: View {
                     accessibilityDifferentiateWithoutColor
                         ? nil
                         : RoundedRectangle(cornerRadius: 25)
-                            // otherwise card's green when dragged to the right
-                            .fill(offset.width > 0 ? .green : .red)
+                            // otherwise card is green when dragged to the right
+                            .fill(offset.width >= 0 ? .green : .red)
                 )
                 .shadow(radius: 10)
             
