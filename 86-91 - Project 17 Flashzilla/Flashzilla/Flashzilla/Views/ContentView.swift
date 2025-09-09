@@ -8,14 +8,11 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var dataManager: DataManager
+    @State private var viewModel = ViewModel()
     @Environment(\.accessibilityVoiceOverEnabled) var accessibilityVoiceOverEnabled
     @Environment(\.accessibilityDifferentiateWithoutColor) var accessibilityDifferentiateWithoutColor
     @Environment(\.scenePhase) var scenePhase
-    @State private var isActive = true  // change to false when player has finished all cards
-    @State private var showingEditScreen = false
-    @State private var cards = [Card]()  // gets filled at runtime
-    @State private var timeRemaining = 100  // 100 seconds
-    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
     var body: some View {
         ZStack {  // background
@@ -24,7 +21,7 @@ struct ContentView: View {
                 .ignoresSafeArea()
             
             VStack {  // timer above cards
-                Text("Time: \(timeRemaining)")
+                Text("Time: \(viewModel.timeRemaining)")
                     .font(.largeTitle)
                     .foregroundStyle(.white)
                     .padding(.horizontal, 20)
@@ -33,27 +30,30 @@ struct ContentView: View {
                     .clipShape(.capsule)
                 
                 ZStack {  // overlapping cards
-                    ForEach(0..<cards.count, id: \.self) { index in
-                        CardView(card: cards[index]) {
-                           withAnimation {
-                               removeCard(at: index)
-                           }
+                    ForEach(0..<viewModel.gameCards.count, id: \.self) { index in
+                        CardView(card: viewModel.gameCards[index]) {
+                            // below only happens if removal callback is used
+                            withAnimation {
+                                viewModel.removeCard(at: index)
+                            }
                         }
-                        .stacked(at: index, in: cards.count)
-                        .allowsHitTesting(index == cards.count - 1)  // can only swipe the top card
-                        .accessibilityHidden(index < cards.count - 1)  // screen reader can only read top card
+                        .stacked(at: index, in: viewModel.gameCards.count)
+                        .allowsHitTesting(index == viewModel.gameCards.count - 1)  // can only swipe the top card
+                        .accessibilityHidden(index < viewModel.gameCards.count - 1)  // screen reader can only read top card
                     }
                 }
                 // can only interact with cards while timer is running
-                .allowsHitTesting(timeRemaining > 0)
+                .allowsHitTesting(viewModel.timeRemaining > 0)
                 
                 // restart the game when get through all cards
-                if cards.isEmpty {
-                    Button("Start Again", action: resetCards)
-                        .padding()
-                        .background(.white)
-                        .foregroundStyle(.black)
-                        .clipShape(.capsule)
+                if viewModel.gameCards.isEmpty {
+                    Button("Start Again") {
+                        viewModel.startGame(with: dataManager)
+                    }
+                    .padding()
+                    .background(.white)
+                    .foregroundStyle(.black)
+                    .clipShape(.capsule)
                 }
             }
             
@@ -62,7 +62,7 @@ struct ContentView: View {
                     Spacer()
                     
                     Button {
-                        showingEditScreen = true
+                        viewModel.showingEditScreen = true
                     } label: {
                         Image(systemName: "plus.circle")
                             .padding()
@@ -85,7 +85,8 @@ struct ContentView: View {
                     HStack {
                         Button {
                             withAnimation {
-                                removeCard(at: cards.count - 1)
+                                viewModel.addWrongCard(at: viewModel.gameCards.count - 1)
+                                viewModel.removeCard(at: viewModel.gameCards.count - 1)
                             }
                         } label: {
                             Image(systemName: "xmark.circle")
@@ -100,7 +101,7 @@ struct ContentView: View {
                         
                         Button {
                             withAnimation {
-                                removeCard(at: cards.count - 1)
+                                viewModel.removeCard(at: viewModel.gameCards.count - 1)
                             }
                         } label: {
                             Image(systemName: "checkmark.circle")
@@ -117,51 +118,31 @@ struct ContentView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingEditScreen, onDismiss: resetCards, content: EditCards.init)
-        .onAppear(perform: resetCards)
-        .onReceive(timer) { time in
+        .sheet(isPresented: $viewModel.showingEditScreen, onDismiss: {
+            viewModel.startGame(with: dataManager)
+        }, content: EditCards.init)
+        .onAppear {
+            dataManager.loadData()
+            viewModel.startGame(with: dataManager)
+        }
+        .onReceive(viewModel.timer) { time in
             // exit immediately if app isn't active - stops timer
-            guard isActive else { return }
+            guard viewModel.isActive else { return }
             
             // so the timer counts down
-            if timeRemaining > 0 {
-                timeRemaining -= 1
+            if viewModel.timeRemaining > 0 {
+                viewModel.timeRemaining -= 1
             }
         }
         .onChange(of: scenePhase) {
             if scenePhase == .active {
                 // if there are still cards, continue the timer
-                if cards.isEmpty == false {
-                    isActive = true
+                if viewModel.gameCards.isEmpty == false {
+                    viewModel.isActive = true
                 }
             } else {
                 // app has gone to background
-                isActive = false
-            }
-        }
-    }
-    
-    func removeCard(at index: Int) {
-        // check the card exists first - for when using the buttons to remove cards
-        guard index >= 0 else { return }
-        
-        cards.remove(at: index)
-        
-        if cards.isEmpty {
-            isActive = false  // stop timer - end of game
-        }
-    }
-    
-    func resetCards() {
-        timeRemaining = 100
-        isActive = true
-        loadData()
-    }
-    
-    func loadData() {
-        if let data = UserDefaults.standard.data(forKey: "Cards") {
-            if let decoded = try? JSONDecoder().decode([Card].self, from: data) {
-                cards = decoded
+                viewModel.isActive = false
             }
         }
     }

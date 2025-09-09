@@ -8,72 +8,41 @@
 import SwiftUI
 
 struct EditCards: View {
+    @EnvironmentObject var dataManager: DataManager
+    @State private var viewModel = ViewModel()
     @Environment(\.dismiss) var dismiss
-    @State private var cards = [Card]()
-    @State private var newPrompt = ""
-    @State private var newAnswer = ""
     
     var body: some View {
         NavigationStack {
             List {
                 Section("Add new card") {
-                    TextField("Prompt", text: $newPrompt)
-                    TextField("Answer", text: $newAnswer)
-                    Button("Add Card", action: addCard)
+                    TextField("Prompt", text: $viewModel.newPrompt)
+                    TextField("Answer", text: $viewModel.newAnswer)
+                    Button("Add Card") {
+                        dataManager.addCard(prompt: viewModel.newPrompt, answer: viewModel.newAnswer)
+                        viewModel.newPrompt = ""
+                        viewModel.newAnswer = ""
+                    }
                 }
                 
                 Section {
-                    ForEach(0..<cards.count, id: \.self) { index in
+                    ForEach(0..<dataManager.cards.count, id: \.self) { index in
                         VStack(alignment: .leading) {
-                            Text(cards[index].prompt)
+                            Text(dataManager.cards[index].prompt)
                                 .font(.headline)
-                            Text(cards[index].answer)
+                            Text(dataManager.cards[index].answer)
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    .onDelete(perform: removeCards)
+                    .onDelete(perform: dataManager.removeCards)
                 }
             }
             .navigationTitle("Edit Cards")
             .toolbar {
-                Button("Done", action: done)
+                Button("Done") { dismiss() }
             }
-            .onAppear(perform: loadData)
+            .onAppear(perform: dataManager.loadData)
         }
-    }
-    
-    func done() {
-        dismiss()
-    }
-    
-    func loadData() {
-        if let data = UserDefaults.standard.data(forKey: "Cards") {
-            if let decoded = try? JSONDecoder().decode([Card].self, from: data) {
-                cards = decoded
-            }
-        }
-    }
-    
-    func saveData() {
-        if let data = try? JSONEncoder().encode(cards) {
-            UserDefaults.standard.set(data, forKey: "Cards")
-        }
-    }
-    
-    func addCard() {
-        let trimmedPrompt = newPrompt.trimmingCharacters(in: .whitespaces)
-        let trimmedAnswer = newAnswer.trimmingCharacters(in: .whitespaces)
-        // check there is actually a prompt and answer entered before continuing
-        guard trimmedPrompt.isEmpty == false && trimmedAnswer.isEmpty == false else { return }
-        
-        let card = Card(prompt: trimmedPrompt, answer: trimmedAnswer)
-        cards.insert(card, at: 0)
-        saveData()
-    }
-    
-    func removeCards(at offsets: IndexSet) {
-        cards.remove(atOffsets: offsets)
-        saveData()
     }
 }
 
