@@ -1,0 +1,36 @@
+//
+//  SkiDetailsView.swift
+//  SnowSeeker
+//
+//  Created by Alisha Carrington on 18/09/2025.
+//
+
+import SwiftUI
+
+struct SkiDetailsView: View {
+    let resort: Resort
+    
+    var body: some View {
+        Group {
+            VStack {
+                Text("Elevation")
+                    .font(.caption.bold())
+                Text("\(resort.elevation)m")
+                    .font(.title3)
+            }
+            
+            VStack {
+                Text("Snow")
+                    .font(.caption.bold())
+                Text("\(resort.snowDepth)cm")
+                    .font(.title3)
+            }
+        }
+        // doesn't affect the Group itself - but gets passed down to child views
+        .frame(maxWidth: .infinity)
+    }
+}
+
+#Preview {
+    SkiDetailsView(resort: .example)
+}
