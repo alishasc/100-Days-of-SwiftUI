@@ -24,6 +24,10 @@ struct Resort: Codable, Hashable, Identifiable {
     var runs: Int
     var facilities: [String]
     
+    var facilityTypes: [Facility] {
+        // convert array of Strings into array of SF symbol Images
+        facilities.map(Facility.init)
+    }
     var sizeStr: String {
         // convert resort size Int value to String
         switch size {
